@@ -46,6 +46,10 @@ class TranslatableSubscriber extends AbstractSubscriber
 
     private $translationFetchMode;
 
+    private $localeColumnName;
+
+    private $translationIdColumnName;
+
     public function __construct(
         ClassAnalyzer $classAnalyzer,
         $isRecursive,
@@ -54,7 +58,9 @@ class TranslatableSubscriber extends AbstractSubscriber
         $translatableTrait,
         $translationTrait,
         $translatableFetchMode,
-        $translationFetchMode
+        $translationFetchMode,
+        $localeColumnName,
+        $translationIdColumnName
     ) {
         parent::__construct($classAnalyzer, $isRecursive);
 
@@ -64,6 +70,8 @@ class TranslatableSubscriber extends AbstractSubscriber
         $this->translationTrait = $translationTrait;
         $this->translatableFetchMode = $this->convertFetchString($translatableFetchMode);
         $this->translationFetchMode = $this->convertFetchString($translationFetchMode);
+        $this->localeColumnName = $localeColumnName;
+        $this->translationIdColumnName = $translationIdColumnName;
     }
 
     /**
@@ -244,7 +252,7 @@ class TranslatableSubscriber extends AbstractSubscriber
                     'fetch' => $this->translationFetchMode,
                     'joinColumns' => [
                         [
-                            'name' => 'translatable_id',
+                            'name' => $this->translationIdColumnName,
                             'referencedColumnName' => 'id',
                             'onDelete' => 'CASCADE'
                         ]
@@ -259,7 +267,7 @@ class TranslatableSubscriber extends AbstractSubscriber
         $name = $classMetadata->getTableName().'_unique_translation';
         if (!$this->hasUniqueTranslationConstraint($classMetadata, $name)) {
             $classMetadata->table['uniqueConstraints'][$name] = [
-                'columns' => ['translatable_id', 'locale']
+                'columns' => [$this->translationIdColumnName, $this->localeColumnName]
             ];
         }
 
@@ -267,7 +275,8 @@ class TranslatableSubscriber extends AbstractSubscriber
             $classMetadata->mapField(
                 array(
                     'fieldName' => 'locale',
-                    'type' => 'string'
+                    'type' => 'string',
+                    'columnName' => $this->localeColumnName,
                 )
             );
         }

@@ -8,6 +8,8 @@ parameters:
     knp.doctrine_behaviors.translatable_subscriber.translation_trait: Knp\DoctrineBehaviors\Model\Translatable\Translation
     knp.doctrine_behaviors.translatable_subscriber.translatable_fetch_method: LAZY
     knp.doctrine_behaviors.translatable_subscriber.translation_fetch_method: LAZY
+    knp.doctrine_behaviors.translatable_subscriber.locale_column_name: locale
+    knp.doctrine_behaviors.translatable_subscriber.translation_id_column_name: translation_id
     knp.doctrine_behaviors.softdeletable_subscriber.class: Knp\DoctrineBehaviors\ORM\SoftDeletable\SoftDeletableSubscriber
     knp.doctrine_behaviors.softdeletable_subscriber.softdeletable_trait: Knp\DoctrineBehaviors\Model\SoftDeletable\SoftDeletable
     knp.doctrine_behaviors.timestampable_subscriber.class: Knp\DoctrineBehaviors\ORM\Timestampable\TimestampableSubscriber
@@ -44,6 +46,8 @@ services:
             - "%knp.doctrine_behaviors.translatable_subscriber.translation_trait%"
             - "%knp.doctrine_behaviors.translatable_subscriber.translatable_fetch_method%"
             - "%knp.doctrine_behaviors.translatable_subscriber.translation_fetch_method%"
+            - "%knp.doctrine_behaviors.translatable_subscriber.locale_column_name%"
+            - "%knp.doctrine_behaviors.translatable_subscriber.translation_id_column_name%"
         tags:
             - { name: doctrine.event_subscriber }
 
@@ -153,4 +157,3 @@ services:
             - "%knp.doctrine_behaviors.sluggable_subscriber.sluggable_trait%"
         tags:
             - { name: doctrine.event_subscriber }
-

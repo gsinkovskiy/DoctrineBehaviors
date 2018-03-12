@@ -26,7 +26,6 @@ class TranslatableTest extends \PHPUnit_Framework_TestCase
 
         $em->addEventSubscriber(new \Knp\DoctrineBehaviors\ORM\Translatable\TranslatableSubscriber(
             new ClassAnalyzer(),
-            false,
             function()
             {
                 return 'en';
@@ -80,6 +79,45 @@ class TranslatableTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(
             'удивительный',
             $entity->translate('ru')->getTitle()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function should_fallback_country_locale_to_language_only_translation()
+    {
+        $em = $this->getEntityManager();
+
+        $entity = new \BehaviorFixtures\ORM\TranslatableEntity();
+        $entity->translate('en', false)->setTitle('plastic bag');
+        $entity->translate('fr', false)->setTitle('sac plastique');
+        $entity->translate('fr_CH', false)->setTitle('cornet');
+        $entity->mergeNewTranslations();
+
+        $em->persist($entity);
+        $em->flush();
+        $id = $entity->getId();
+        $em->clear();
+
+        $entity = $em
+            ->getRepository('BehaviorFixtures\ORM\TranslatableEntity')
+            ->find($id)
+        ;
+
+        $this->assertEquals(
+            'plastic bag',
+            $entity->translate('de')->getTitle()
+        );
+
+        $this->assertEquals(
+            'sac plastique',
+            $entity->translate('fr_FR')->getTitle()
+        );
+
+        $this->assertEquals(
+            'cornet',
+            $entity->translate('fr_CH')->getTitle()
         );
     }
 

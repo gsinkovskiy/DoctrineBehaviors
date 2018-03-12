@@ -1,30 +1,53 @@
 # Doctrine2 Behaviors
 
-[![Build Status](https://secure.travis-ci.org/KnpLabs/DoctrineBehaviors.png)](http://travis-ci.org/KnpLabs/DoctrineBehaviors)
+[![Build Status](https://travis-ci.org/KnpLabs/DoctrineBehaviors.svg?branch=master)](http://travis-ci.org/KnpLabs/DoctrineBehaviors)
 
 
-This php 5.4+ library is a collection of traits
-that add behaviors to Doctrine2 entites and repositories.
+This PHP `>=5.4` library is a collection of traits and interfaces
+that add behaviors to Doctrine2 entities and repositories.
 
 It currently handles:
 
- * [tree](#tree)
- * [translatable](#translatable)
- * [timestampable](#timestampable)
- * [softDeletable](#softDeletable)
  * [blameable](#blameable)
- * [loggable](#loggable)
- * [geocodable](#geocodable)
  * [filterable](#filterable)
+ * [geocodable](#geocodable)
+ * joinable
+ * [loggable](#loggable)
  * [sluggable](#sluggable)
+ * [softDeletable](#softDeletable)
+ * sortable
+ * [timestampable](#timestampable)
+ * [translatable](#translatable)
+ * [tree](#tree)
+
+## This project is looking for maintainers
+
+We realize we don't have so much time anymore to maintain this project as it should be maintained.
+Therefore we are looking for maintainers. Open an issue if you want to keep working on this.
 
 ## Notice:
 
 Some behaviors (translatable, timestampable, softDeletable, blameable, geocodable) need Doctrine subscribers in order to work.
 Make sure to activate them by reading the [Subscribers](#subscribers) section.
 
-##Installation
-```composer require knplabs/doctrine-behaviors:~1.1```
+## Installation
+
+```
+composer require knplabs/doctrine-behaviors:~1.1
+```
+
+## Configuration
+By default, when integrated with Symfony, all subscribers are enabled (if you don't specify any configuration for the bundle).
+But you can enable behaviors you need in a whitelist manner:
+```yaml
+knp_doctrine_behaviors:
+    blameable:      false
+    geocodable:     ~     # Here null is converted to false
+    loggable:       ~
+    sluggable:      true
+    soft_deletable: true
+    # All others behaviors are disabled
+```
 
 <a name="subscribers" id="subscribers"></a>
 ## Subscribers
@@ -91,14 +114,15 @@ use Knp\DoctrineBehaviors\Model as ORMBehaviors;
  */
 class Category implements ORMBehaviors\Tree\NodeInterface, \ArrayAccess
 {
-    use ORMBehaviors\Tree\Node,
-        ORMBehaviors\Translatable\Translatable,
-        ORMBehaviors\Timestampable\Timestampable,
-        ORMBehaviors\SoftDeletable\SoftDeletable,
-        ORMBehaviors\Blameable\Blameable,
+    use ORMBehaviors\Blameable\Blameable,
         ORMBehaviors\Geocodable\Geocodable,
         ORMBehaviors\Loggable\Loggable,
-        ORMBehaviors\Sluggable\Sluggable
+        ORMBehaviors\Sluggable\Sluggable,
+        ORMBehaviors\SoftDeletable\SoftDeletable,
+        ORMBehaviors\Sortable\Sortable,
+        ORMBehaviors\Timestampable\Timestampable,
+        ORMBehaviors\Translatable\Translatable,
+        ORMBehaviors\Tree\Node
     ;
 
     /**
@@ -142,7 +166,7 @@ You now have a working `Category` that behaves like:
     $child = new Category;
     $child->setId(2);
 
-    $child->setChildOf($category);
+    $child->setChildNodeOf($category);
 
     $em->persist($child);
     $em->persist($category);
@@ -150,11 +174,11 @@ You now have a working `Category` that behaves like:
 
     $root = $em->getRepository('Category')->getTree();
 
-    $root->getParent(); // null
+    $root->getParentNode(); // null
     $root->getChildNodes(); // ArrayCollection
     $root[0][1]; // node or null
-    $root->isLeaf(); // boolean
-    $root->isRoot(); // boolean
+    $root->isLeafNode(); // boolean
+    $root->isRootNode(); // boolean
 
 ```
 
@@ -163,16 +187,13 @@ You now have a working `Category` that behaves like:
 <a name="translatable" id="translatable"></a>
 ### translatable:
 
-If you're working on a `Category` entity, the `Translatable` behavior expects a
-**CategoryTranslation** entity by default. If you prefer to use a different class name for the translation entity,
-you should override the trait method `getTranslationEntityClass` in the translatable entity and `getTranslatableEntityClass`
-in the translation entity. If you override one, you also need to override the other to return the inverse class.
+If you're working on a `Category` entity, the `Translatable` behavior expects a **CategoryTranslation** entity in the 
+same folder of Category entity by default.
 
-The default naming convention (or its customization via trait methods) avoids you to handle manually entity associations.
+The default naming convention (or its customization via trait methods) avoids you to manually handle entity associations.
 It is handled automatically by the TranslationSubscriber.
 
 In order to use the Translatable trait, you will have to create this `CategoryTranslation` entity.
-
 
 ``` php
 <?php
@@ -256,7 +277,8 @@ class Category
 ```
 
 
-After updating the database, ie. with `./console doctrine:schema:update --force`, you can now work on translations using `translate` or `getTranslations` methods.
+After updating the database, ie. with `./console doctrine:schema:update --force`, 
+you can now work on translations using `translate` or `getTranslations` methods.
 
 ``` php
 <?php
@@ -272,6 +294,79 @@ After updating the database, ie. with `./console doctrine:schema:update --force`
     $category->translate('en')->getName();
 
 ```
+
+#### Override
+
+In case you prefer to use a different class name for the translation entity, 
+or want to use a separate namespace, you have 2 ways :
+
+If you want to define a custom translation entity class name globally :  
+Override the trait `Translatable` and his  method `getTranslationEntityClass` 
+and the trait `Translation` and his method `getTranslatableEntityClass` in the translation entity. 
+If you override one, you also need to override the other to return the inverse class.
+
+Example: Let's say you want to create a sub namespace AppBundle\Entity\Translation to stock translations classes 
+then put overrided traits in that folder.
+
+``` php
+<?php
+namespace AppBundle\Entity\Translation;
+
+use Knp\DoctrineBehaviors\Model\Translatable\Translatable;
+use Symfony\Component\PropertyAccess\PropertyAccess;
+
+trait TranslatableTrait
+{
+    use Translatable;
+
+    /**
+     * @inheritdoc
+     */
+    public static function getTranslationEntityClass()
+    {
+        $explodedNamespace = explode('\\', __CLASS__);
+        $entityClass = array_pop($explodedNamespace);
+        return '\\'.implode('\\', $explodedNamespace).'\\Translation\\'.$entityClass.'Translation';
+    }
+}
+```
+
+``` php
+<?php
+namespace AppBundle\Entity\Translation;
+
+use Knp\DoctrineBehaviors\Model\Translatable\Translation;
+
+trait TranslationTrait
+{
+    use Translation;
+
+    /**
+     * @inheritdoc
+     */
+    public static function getTranslatableEntityClass()
+    {
+        $explodedNamespace = explode('\\', __CLASS__);
+        $entityClass = array_pop($explodedNamespace);
+        // Remove Translation namespace
+        array_pop($explodedNamespace);
+        return '\\'.implode('\\', $explodedNamespace).'\\'.substr($entityClass, 0, -11);
+    }
+}
+```
+
+If you use that way make sure you override trait parameters of DoctrineBehaviors :
+
+``` yaml
+parameters:
+    knp.doctrine_behaviors.translatable_subscriber.translatable_trait: AppBundle\Entity\Translation\TranslatableTrait
+    knp.doctrine_behaviors.translatable_subscriber.translation_trait: AppBundle\Entity\Translation\TranslationTrait
+```
+
+If you want to define a custom translation entity class name just for a single translatable class :  
+Override the trait method `getTranslationEntityClass` in the translatable entity and `getTranslatableEntityClass`
+in the translation entity. If you override one, you also need to override the other to return the inverse class.
+
 
 #### guess the current locale
 
@@ -374,6 +469,19 @@ so that when you try to call `getName` (for example) it will return you the tran
 
 ```
 
+If you wish to change the doctrine type of the database fields that will be created for timestampable models you can
+set the following parameter like so:
+
+``` yaml
+parameters:
+    knp.doctrine_behaviors.timestampable_subscriber.db_field_type: datetimetz
+```
+
+`datetimetz` here is a useful one to use if you are working with a Postgres database, otherwise you may encounter some
+timezone issues. For more information on this see: 
+<a href="http://doctrine-dbal.readthedocs.org/en/latest/reference/known-vendor-issues.html#datetime-datetimetz-and-time-types">http://doctrine-dbal.readthedocs.org/en/latest/reference/known-vendor-issues.html#datetime-datetimetz-and-time-types</a>
+
+The default type is `datetime`.
 
 <a name="blameable" id="blameable"></a>
 ### blameable

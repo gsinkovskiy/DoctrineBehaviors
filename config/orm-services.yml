@@ -14,6 +14,7 @@ parameters:
     knp.doctrine_behaviors.softdeletable_subscriber.softdeletable_trait: Knp\DoctrineBehaviors\Model\SoftDeletable\SoftDeletable
     knp.doctrine_behaviors.timestampable_subscriber.class: Knp\DoctrineBehaviors\ORM\Timestampable\TimestampableSubscriber
     knp.doctrine_behaviors.timestampable_subscriber.timestampable_trait: Knp\DoctrineBehaviors\Model\Timestampable\Timestampable
+    knp.doctrine_behaviors.timestampable_subscriber.db_field_type: datetime
     knp.doctrine_behaviors.blameable_subscriber.class: Knp\DoctrineBehaviors\ORM\Blameable\BlameableSubscriber
     knp.doctrine_behaviors.blameable_subscriber.blameable_trait: Knp\DoctrineBehaviors\Model\Blameable\Blameable
     knp.doctrine_behaviors.blameable_subscriber.user_callable.class: Knp\DoctrineBehaviors\ORM\Blameable\UserCallable
@@ -39,7 +40,6 @@ services:
         public:  false
         arguments:
             - "@knp.doctrine_behaviors.reflection.class_analyzer"
-            - "%knp.doctrine_behaviors.reflection.is_recursive%"
             - "@knp.doctrine_behaviors.translatable_subscriber.current_locale_callable"
             - "@knp.doctrine_behaviors.translatable_subscriber.default_locale_callable"
             - "%knp.doctrine_behaviors.translatable_subscriber.translatable_trait%"
@@ -60,7 +60,7 @@ services:
     knp.doctrine_behaviors.translatable_subscriber.default_locale_callable:
         class:           "%knp.doctrine_behaviors.translatable_subscriber.default_locale_callable.class%"
         arguments:
-            - %locale%
+            - "%locale%"
         public:  false
 
     knp.doctrine_behaviors.softdeletable_subscriber:
@@ -80,6 +80,7 @@ services:
             - "@knp.doctrine_behaviors.reflection.class_analyzer"
             - "%knp.doctrine_behaviors.reflection.is_recursive%"
             - "%knp.doctrine_behaviors.timestampable_subscriber.timestampable_trait%"
+            - "%knp.doctrine_behaviors.timestampable_subscriber.db_field_type%"
         tags:
             - { name: doctrine.event_subscriber }
 

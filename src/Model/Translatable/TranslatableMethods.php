@@ -72,6 +72,7 @@ trait TranslatableMethods
      * In order to persist new translations, call mergeNewTranslations method, before flush
      *
      * @param string $locale The locale (en, ru, fr) | null If null, will try with current locale
+     * @param bool $fallbackToDefault Whether fallback to default locale
      *
      * @return Translation
      */
@@ -80,6 +81,17 @@ trait TranslatableMethods
         return $this->doTranslate($locale, $fallbackToDefault);
     }
 
+    /**
+     * Returns translation for specific locale (creates new one if doesn't exists).
+     * If requested translation doesn't exist, it will first try to fallback default locale
+     * If any translation doesn't exist, it will be added to newTranslations collection.
+     * In order to persist new translations, call mergeNewTranslations method, before flush
+     *
+     * @param string $locale The locale (en, ru, fr) | null If null, will try with current locale
+     * @param bool $fallbackToDefault Whether fallback to default locale
+     *
+     * @return Translation
+     */
     protected function doTranslate($locale = null, $fallbackToDefault = true)
     {
         if (null === $locale) {
@@ -91,11 +103,18 @@ trait TranslatableMethods
             return $translation;
         }
 
-        if ($fallbackToDefault && $defaultTranslation = $this->findTranslationByLocale($this->getDefaultLocale(), false)) {
-            return $defaultTranslation;
+        if ($fallbackToDefault) {
+            if (($fallbackLocale = $this->computeFallbackLocale($locale))
+                && ($translation = $this->findTranslationByLocale($fallbackLocale))) {
+                return $translation;
+            }
+
+            if ($defaultTranslation = $this->findTranslationByLocale($this->getDefaultLocale(), false)) {
+                return $defaultTranslation;
+            }
         }
 
-        $class       = self::getTranslationEntityClass();
+        $class       = static::getTranslationEntityClass();
         $translation = new $class();
         $translation->setLocale($locale);
 
@@ -126,11 +145,13 @@ trait TranslatableMethods
         $this->currentLocale = $locale;
     }
 
+    /**
+     * @return Returns the current locale
+     */
     public function getCurrentLocale()
     {
         return $this->currentLocale ?: $this->getDefaultLocale();
     }
-
 
     /**
      * @param mixed $locale the default locale
@@ -140,12 +161,22 @@ trait TranslatableMethods
         $this->defaultLocale = $locale;
     }
 
-
+    /**
+     * @return Returns the default locale
+     */
     public function getDefaultLocale()
     {
         return $this->defaultLocale;
     }
 
+    /**
+     * An extra feature allows you to proxy translated fields of a translatable entity.
+     * 
+     * @param string $method
+     * @param array $arguments
+     * 
+     * @return mixed The translated value of the field for current locale
+     */
     protected function proxyCurrentLocaleTranslation($method, array $arguments = [])
     {
         return call_user_func_array(
@@ -183,5 +214,14 @@ trait TranslatableMethods
         if ($withNewTranslations) {
             return $this->getNewTranslations()->get($locale);
         }
+    }
+
+    protected function computeFallbackLocale($locale)
+    {
+        if (strrchr($locale, '_') !== false) {
+            return substr($locale, 0, -strlen(strrchr($locale, '_')));
+        }
+
+        return false;
     }
 }

@@ -26,7 +26,8 @@ class TimestampableTest extends \PHPUnit_Framework_TestCase
             new \Knp\DoctrineBehaviors\ORM\Timestampable\TimestampableSubscriber(
                 new ClassAnalyzer(),
                 false,
-                'Knp\DoctrineBehaviors\Model\Timestampable\Timestampable'
+                'Knp\DoctrineBehaviors\Model\Timestampable\Timestampable',
+                'datetime'
         ));
 
         return $em;
@@ -65,6 +66,7 @@ class TimestampableTest extends \PHPUnit_Framework_TestCase
 
         $em->persist($entity);
         $em->flush();
+        $em->refresh($entity);
         $id = $entity->getId();
         $createdAt = $entity->getCreatedAt();
         $em->clear();
@@ -98,6 +100,7 @@ class TimestampableTest extends \PHPUnit_Framework_TestCase
 
         $em->persist($entity);
         $em->flush();
+        $em->refresh($entity);
         $id = $entity->getId();
         $createdAt = $entity->getCreatedAt();
         $updatedAt = $entity->getUpdatedAt();
@@ -134,6 +137,7 @@ class TimestampableTest extends \PHPUnit_Framework_TestCase
 
         $em->persist($entity);
         $em->flush();
+        $em->refresh($entity);
         $id = $entity->getId();
         $createdAt = $entity->getCreatedAt();
         $em->clear();

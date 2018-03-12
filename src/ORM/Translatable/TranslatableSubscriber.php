@@ -43,12 +43,12 @@ class TranslatableSubscriber extends AbstractSubscriber
     private $localeColumnName;
     private $translationIdColumnName;
 
-    public function __construct(ClassAnalyzer $classAnalyzer, $isRecursive, callable $currentLocaleCallable = null,
+    public function __construct(ClassAnalyzer $classAnalyzer, callable $currentLocaleCallable = null,
                                 callable $defaultLocaleCallable = null,$translatableTrait, $translationTrait,
                                 $translatableFetchMode, $translationFetchMode,
                                 $localeColumnName, $translationIdColumnName)
     {
-        parent::__construct($classAnalyzer, $isRecursive);
+        parent::__construct($classAnalyzer, false);
 
         $this->currentLocaleCallable = $currentLocaleCallable;
         $this->defaultLocaleCallable = $defaultLocaleCallable;

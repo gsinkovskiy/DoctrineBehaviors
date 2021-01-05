@@ -1,42 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Knp\DoctrineBehaviors\Bundle\DependencyInjection;
 
+use Doctrine\Common\EventSubscriber;
 use Symfony\Component\Config\FileLocator;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 
-class DoctrineBehaviorsExtension extends Extension
+final class DoctrineBehaviorsExtension extends Extension
 {
     /**
-     * {@inheritDoc}
+     * @var string
      */
-    public function load(array $configs, ContainerBuilder $container)
-    {
-        $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../../../config'));
-        $loader->load('orm-services.yml');
-
-        $configuration = new Configuration();
-        $config = $this->processConfiguration($configuration, $configs);
-
-        // Don't rename in Configuration for BC reasons
-        $config['softdeletable'] = $config['soft_deletable'];
-        unset($config['soft_deletable']);
-
-        foreach ($config as $behavior => $enabled) {
-            if (!$enabled) {
-                $container->removeDefinition(sprintf('knp.doctrine_behaviors.%s_subscriber', $behavior));
-            }
-        }
-    }
+    private const DOCTRINE_EVENT_SUBSCRIBER_TAG = 'doctrine.event_subscriber';
 
     /**
-     * {@inheritDoc}
+     * @param string[] $configs
      */
-    public function getAlias()
+    public function load(array $configs, ContainerBuilder $containerBuilder): void
     {
-        return 'knp_doctrine_behaviors';
+        $phpFileLoader = new PhpFileLoader($containerBuilder, new FileLocator(__DIR__ . '/../../../config'));
+        $phpFileLoader->load('services.php');
+
+        // @see https://github.com/doctrine/DoctrineBundle/issues/674
+        $containerBuilder->registerForAutoconfiguration(EventSubscriber::class)
+            ->addTag(self::DOCTRINE_EVENT_SUBSCRIBER_TAG);
     }
 }

@@ -15,10 +15,6 @@ use Knp\DoctrineBehaviors\Contract\Provider\LocaleProviderInterface;
 
 final class TranslatableEventSubscriber implements EventSubscriber
 {
-    /**
-     * @var string
-     */
-    public const LOCALE = 'locale';
 
     /**
      * @var int
@@ -35,14 +31,28 @@ final class TranslatableEventSubscriber implements EventSubscriber
      */
     private $localeProvider;
 
+    /**
+     * @var string
+     */
+    private $translationIdColumnName;
+
+    /**
+     * @var string
+     */
+    private $localeColumnName;
+
     public function __construct(
         LocaleProviderInterface $localeProvider,
         string $translatableFetchMode,
-        string $translationFetchMode
+        string $translationFetchMode,
+        string $translationIdColumnName,
+        string $translationLocaleColumnName
     ) {
         $this->localeProvider = $localeProvider;
         $this->translatableFetchMode = $this->convertFetchString($translatableFetchMode);
         $this->translationFetchMode = $this->convertFetchString($translationFetchMode);
+        $this->translationIdColumnName = $translationIdColumnName;
+        $this->localeColumnName = $translationLocaleColumnName;
     }
 
     /**
@@ -116,7 +126,7 @@ final class TranslatableEventSubscriber implements EventSubscriber
         $classMetadataInfo->mapOneToMany([
             'fieldName' => 'translations',
             'mappedBy' => 'translatable',
-            'indexBy' => self::LOCALE,
+            'indexBy' => $this->localeColumnName,
             'cascade' => ['persist', 'merge', 'remove'],
             'fetch' => $this->translatableFetchMode,
             'targetEntity' => $classMetadataInfo->getReflectionClass()
@@ -135,7 +145,7 @@ final class TranslatableEventSubscriber implements EventSubscriber
                 'cascade' => ['persist', 'merge'],
                 'fetch' => $this->translationFetchMode,
                 'joinColumns' => [[
-                    'name' => 'translatable_id',
+                    'name' => $this->translationIdColumnName,
                     'referencedColumnName' => 'id',
                     'onDelete' => 'CASCADE',
                 ]],
@@ -148,13 +158,13 @@ final class TranslatableEventSubscriber implements EventSubscriber
         $name = $classMetadataInfo->getTableName() . '_unique_translation';
         if (! $this->hasUniqueTranslationConstraint($classMetadataInfo, $name)) {
             $classMetadataInfo->table['uniqueConstraints'][$name] = [
-                'columns' => ['translatable_id', self::LOCALE],
+                'columns' => ['translatable_id', $this->localeColumnName],
             ];
         }
 
-        if (! $classMetadataInfo->hasField(self::LOCALE) && ! $classMetadataInfo->hasAssociation(self::LOCALE)) {
+        if (! $classMetadataInfo->hasField($this->localeColumnName) && ! $classMetadataInfo->hasAssociation($this->localeColumnName)) {
             $classMetadataInfo->mapField([
-                'fieldName' => self::LOCALE,
+                'fieldName' => $this->localeColumnName,
                 'type' => 'string',
                 'length' => 5,
             ]);

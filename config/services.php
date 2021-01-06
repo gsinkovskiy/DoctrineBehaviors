@@ -9,6 +9,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $parameters->set('doctrine_behaviors_translatable_fetch_mode', 'LAZY');
     $parameters->set('doctrine_behaviors_translation_fetch_mode', 'LAZY');
+    $parameters->set('doctrine_behaviors_translation_id_column_name', 'translatable_id');
+    $parameters->set('doctrine_behaviors_translation_locale_column_name', 'locale');
     $parameters->set('doctrine_behaviors_blameable_user_entity', null);
     $parameters->set('doctrine_behaviors_timestampable_date_field_type', 'datetime');
 
@@ -20,6 +22,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->autoconfigure()
         ->bind('$translatableFetchMode', '%doctrine_behaviors_translatable_fetch_mode%')
         ->bind('$translationFetchMode', '%doctrine_behaviors_translation_fetch_mode%')
+        ->bind('$translationIdColumnName', '%doctrine_behaviors_translation_id_column_name%')
+        ->bind('$translationLocaleColumnName', '%doctrine_behaviors_translation_locale_column_name%')
         ->bind('$blameableUserEntity', '%doctrine_behaviors_blameable_user_entity%')
         ->bind('$timestampableDateFieldType', '%doctrine_behaviors_timestampable_date_field_type%');
 
